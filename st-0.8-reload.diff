@@ -1,0 +1,65 @@
+Only in st-0.8-reload: config.h
+Only in st-0.8-reload: st
+Only in st-0.8-reload: st.o
+diff -up st-0.8/x.c st-0.8-reload/x.c
+--- st-0.8/x.c	2020-04-08 21:29:37.010845948 +1000
++++ st-0.8-reload/x.c	2020-04-08 21:21:13.007093475 +1000
+@@ -1918,15 +1918,21 @@ config_init(void)
+ 	char *resm;
+ 	XrmDatabase db;
+ 	ResourcePref *p;
++	Display *dpy;
++
++	if(!(dpy = XOpenDisplay(NULL)))
++		die("Can't open display\n");
+ 
+ 	XrmInitialize();
+-	resm = XResourceManagerString(xw.dpy);
++	resm = XResourceManagerString(dpy);
+ 	if (!resm)
+ 		return;
+ 
+ 	db = XrmGetStringDatabase(resm);
+ 	for (p = resources; p < resources + LEN(resources); p++)
+ 		resource_load(db, p->name, p->type, p->dst);
++
++	XFlush(dpy);
+ }
+ 
+ void
+@@ -1942,6 +1948,24 @@ usage(void)
+ 	    " [stty_args ...]\n", argv0, argv0);
+ }
+ 
++void
++reload(int sig){	
++	config_init();
++
++	xloadcols();
++	xunloadfonts();
++	xloadfonts(font, 0);
++
++	cresize(win.w, win.h);
++	ttyresize(win.w, win.h);
++	
++	redraw();
++
++	ttywrite("\033[O", 3, 0);
++
++	signal(SIGUSR1, reload);
++}
++
+ int
+ main(int argc, char *argv[])
+ {
+@@ -2009,6 +2033,7 @@ run:
+ 	config_init();
+ 	cols = MAX(cols, 1);
+ 	rows = MAX(rows, 1);
++	signal(SIGUSR1, reload);
+ 	tnew(cols, rows);
+ 	xinit(cols, rows);
+ 	xsetenv();
+Only in st-0.8: x.c.orig
+Only in st-0.8: x.c.rej
+Only in st-0.8-reload: x.o
