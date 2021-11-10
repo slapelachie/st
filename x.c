@@ -2070,15 +2070,22 @@ config_init(void)
 	char *resm;
 	XrmDatabase db;
 	ResourcePref *p;
+	Display *dpy;
+
+	if(!(dpy = XOpenDisplay(NULL)))
+		die("Can't open display\n");
 
 	XrmInitialize();
-	resm = XResourceManagerString(xw.dpy);
+	resm = XResourceManagerString(dpy);
 	if (!resm)
 		return;
 
 	db = XrmGetStringDatabase(resm);
 	for (p = resources; p < resources + LEN(resources); p++)
 		resource_load(db, p->name, p->type, p->dst);
+
+	XFlush(dpy);
+	XCloseDisplay(dpy);
 }
 
 void
@@ -2094,9 +2101,27 @@ usage(void)
 	    " [stty_args ...]\n", argv0, argv0);
 }
 
+void
+reload(int sig){	
+	config_init();
+
+	xloadcols();
+	xunloadfonts();
+	xloadfonts(font, 0);
+
+	cresize(win.w, win.h);
+	ttyresize(win.w, win.h);
+	
+	redraw();
+}
+
 int
 main(int argc, char *argv[])
 {
+	struct sigaction sa;
+	sa.sa_handler = reload;
+	sa.sa_flags = SA_RESTART;
+
 	xw.l = xw.t = 0;
 	xw.isfixed = False;
 	xsetcursor(cursorstyle);
@@ -2161,6 +2186,7 @@ run:
 	config_init();
 	cols = MAX(cols, 1);
 	rows = MAX(rows, 1);
+	sigaction(SIGUSR1, &sa, NULL);
 	tnew(cols, rows);
 	xinit(cols, rows);
 	xsetenv();

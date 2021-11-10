@@ -2,6 +2,18 @@ st - simple terminal
 --------------------
 st is a simple terminal emulator for X which sucks less.
 
+Patches
+-------
+
+  NAME							VERSION
+- blinking cursor				20200531-a2a7044
+- ligatures-scrollback			20210824-0.8.4
+- scrollback					20210507-4536f46
+- scrollback-mouse				20191024-a2c479c	 
+- scrollback-mouse-altscreen	20200416-5703aa0
+- xresources					20200604-9ba7ecf
+- xcolors reload				N/A (custom patch)
+
 
 Requirements
 ------------
