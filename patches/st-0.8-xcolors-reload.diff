@@ -1,0 +1,70 @@
+Only in st-0.8-reload: config.h
+Only in st-0.8-reload: st
+Only in st-0.8-reload: st.o
+Only in st-0.8-reload: .vscode
+diff -up st-0.8/x.c st-0.8-reload/x.c
+--- st-0.8/x.c	2020-04-08 21:29:37.010845948 +1000
++++ st-0.8-reload/x.c	2020-04-09 10:02:17.861230431 +1000
+@@ -1918,15 +1918,22 @@ config_init(void)
+ 	char *resm;
+ 	XrmDatabase db;
+ 	ResourcePref *p;
++	Display *dpy;
++
++	if(!(dpy = XOpenDisplay(NULL)))
++		die("Can't open display\n");
+ 
+ 	XrmInitialize();
+-	resm = XResourceManagerString(xw.dpy);
++	resm = XResourceManagerString(dpy);
+ 	if (!resm)
+ 		return;
+ 
+ 	db = XrmGetStringDatabase(resm);
+ 	for (p = resources; p < resources + LEN(resources); p++)
+ 		resource_load(db, p->name, p->type, p->dst);
++
++	XFlush(dpy);
++	XCloseDisplay(dpy);
+ }
+ 
+ void
+@@ -1942,9 +1949,27 @@ usage(void)
+ 	    " [stty_args ...]\n", argv0, argv0);
+ }
+ 
++void
++reload(int sig){	
++	config_init();
++
++	xloadcols();
++	xunloadfonts();
++	xloadfonts(font, 0);
++
++	cresize(win.w, win.h);
++	ttyresize(win.w, win.h);
++	
++	redraw();
++}
++
+ int
+ main(int argc, char *argv[])
+ {
++	struct sigaction sa;
++	sa.sa_handler = reload;
++	sa.sa_flags = SA_RESTART;
++
+ 	xw.l = xw.t = 0;
+ 	xw.isfixed = False;
+ 	win.cursor = cursorshape;
+@@ -2009,6 +2034,7 @@ run:
+ 	config_init();
+ 	cols = MAX(cols, 1);
+ 	rows = MAX(rows, 1);
++	sigaction(SIGUSR1, &sa, NULL);
+ 	tnew(cols, rows);
+ 	xinit(cols, rows);
+ 	xsetenv();
+Only in st-0.8: x.c.orig
+Only in st-0.8: x.c.rej
+Only in st-0.8-reload: x.o
